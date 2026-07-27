@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Panel - FST Sisters Database</title>
+<link rel="stylesheet" href="css/fst.css">
+</head>
+<body>
+
+<div class="app-layout">
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+        <span>FST Sisters</span>
+      </div>
+    </div>
+    <div class="sidebar-nav">
+      <div class="sidebar-section-title">Main</div>
+      <a class="sidebar-link" href="dashboard.html">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span>Dashboard</span>
+      </a>
+      <div class="sidebar-section-title">Administration</div>
+      <a class="sidebar-link active" href="superadmin.html">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <span>Admin Panel</span>
+      </a>
+    </div>
+    <div class="sidebar-footer" id="sidebarFooter"></div>
+  </div>
+
+  <!-- Main -->
+  <main class="main-content">
+    <div class="header">
+      <div class="header-left">
+        <h1 class="header-title">Admin Panel</h1>
+      </div>
+      <div class="header-right">
+        <button class="header-icon-btn" onclick="doLogout()" title="Logout">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="content">
+      <!-- Stats -->
+      <div class="stats-grid" id="statsGrid"></div>
+
+      <!-- Users Table -->
+      <div class="table-card" style="margin-bottom:22px">
+        <div class="table-header">
+          <span class="table-title">System Users</span>
+          <span class="text-muted text-sm" id="userCount">0 users</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Sister ID</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="usersBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Management Cards -->
+      <div class="profile-grid">
+        <div class="card">
+          <div class="card-title">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+            Database Management
+          </div>
+          <p class="text-muted text-sm mb-4">Export all data as a JSON backup file.</p>
+          <button class="header-btn" onclick="exportData()" style="display:inline-flex">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Export Data
+          </button>
+          <input type="file" id="importFile" accept=".json,.csv" style="display:none" onchange="handleImportFile(this.files[0])">
+          <button class="header-btn" onclick="document.getElementById('importFile').click()" style="display:inline-flex;margin-top:10px">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Import Sisters
+          </button>
+        </div>
+        <div class="card">
+          <div class="card-title">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            System Settings
+          </div>
+          <p class="text-muted text-sm mb-4">Monthly automatic backup is enabled.</p>
+          <div class="profile-field"><div class="profile-field-label">Backup</div><div class="profile-field-value"><span class="badge badge-active">Enabled</span></div></div>
+          <div class="profile-field"><div class="profile-field-label">Data</div><div class="profile-field-value"><span class="badge badge-active">Active</span></div></div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="js/store.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/auth.js"></script>
+<script>
+function renderSidebar() {
+  var user = Auth.currentUser;
+  document.getElementById('sidebarFooter').innerHTML =
+    '<div class="sidebar-user"><div class="sidebar-avatar">' + Utils.getInitials(user.email.split('@')[0],'') + '</div><div class="sidebar-user-info"><div class="sidebar-user-name">' + user.email.split('@')[0] + '</div><div class="sidebar-user-role">' + user.role + '</div></div></div>';
+}
+
+function renderStats() {
+  var stats = Data.getStats();
+  document.getElementById('statsGrid').innerHTML =
+    '<div class="stat-card"><div class="stat-icon blue"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div class="stat-content"><div class="stat-label">Total Users</div><div class="stat-value">' + stats.totalUsers + '</div></div></div>' +
+    '<div class="stat-card"><div class="stat-icon green"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div><div class="stat-content"><div class="stat-label">Active Sisters</div><div class="stat-value">' + stats.activeSisters + '</div></div></div>' +
+    '<div class="stat-card"><div class="stat-icon orange"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div><div class="stat-content"><div class="stat-label">Documents</div><div class="stat-value">' + stats.totalDocuments + '</div></div></div>' +
+    '<div class="stat-card"><div class="stat-icon red"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg></div><div class="stat-content"><div class="stat-label">Total Sisters</div><div class="stat-value">' + stats.totalSisters + '</div></div></div>';
+}
+
+function renderUsers() {
+  var users = Data.getUsers();
+  document.getElementById('userCount').textContent = users.length + ' users';
+  var html = '';
+  for (var i = 0; i < users.length; i++) {
+    var u = users[i];
+    var roleBadge = u.role === 'superadmin' ? 'badge-active' : u.role === 'admin' ? 'badge-retired' : u.role === 'moderator' ? 'badge-warning' : 'badge-inactive';
+    html += '<tr>' +
+      '<td><span class="font-medium">' + u.email + '</span></td>' +
+      '<td><span class="badge ' + roleBadge + '">' + Utils.capitalize(u.role) + '</span></td>' +
+      '<td class="text-muted">' + (u.sisterId || '-') + '</td>' +
+      '<td><div class="table-actions"><button onclick="deleteUser(\'' + u.id + '\')" title="Delete">' +
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>' +
+      '</button></div></td>' +
+      '</tr>';
+  }
+  document.getElementById('usersBody').innerHTML = html;
+}
+
+function deleteUser(id) {
+  if (!confirm('Delete this user?')) return;
+  var users = Store.get('users', []).filter(function(u) { return u.id !== id; });
+  Store.set('users', users);
+  renderUsers();
+}
+
+function exportData() {
+  var data = { exportDate: new Date().toISOString(), sisters: Store.get('sisters',[]), documents: Store.get('documents',[]), users: Store.get('users',[]) };
+  var blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'fst-backup-' + new Date().toISOString().split('T')[0] + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function handleImportFile(file) {
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(evt) {
+    var text = evt.target.result;
+    var format = file.name.toLowerCase().endsWith('.csv') ? 'csv' : 'json';
+    fetch('/api/sisters/import', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ format: format, content: text })
+    }).then(function(res) { return res.json(); }).then(function(result) {
+      if (result.success) {
+        alert('Imported ' + result.data.imported + ' new sisters.');
+        window.location.reload();
+      } else {
+        alert(result.error || 'Import failed');
+      }
+    }).catch(function() { alert('Import failed'); });
+  };
+  reader.readAsText(file);
+}
+
+function doLogout() { Auth.logout(); window.location.href = 'index.html'; }
+
+document.addEventListener('DOMContentLoaded', function() {
+  if (!Auth.guardSuperAdmin()) return;
+  renderSidebar();
+  renderStats();
+  renderUsers();
+});
+</script>
+</body>
+</html>

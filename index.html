@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FST Sisters Database</title>
+<link rel="stylesheet" href="css/fst.css">
+</head>
+<body>
+
+<div id="app" class="login-page">
+
+  <div class="login-header">
+    <div class="login-header-inner">
+      <div class="login-header-left">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/><path d="M12 12l10-5"/></svg>
+        <span>FST Sisters Database</span>
+      </div>
+      <div class="login-header-right">
+        <div class="logo-badge">Franciscan Sisters</div>
+        <div class="logo-badge">FST Philippines</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="login-divider"></div>
+
+  <div class="login-main">
+    <div class="login-main-inner">
+
+      <div class="login-left">
+        <h1>Welcome to FST Sisters Database</h1>
+        <p class="desc">Enter a valid username and password to gain access to the FST Sisters Database Management System.</p>
+        <div class="login-images">
+          <div class="login-image-card">
+            <div class="img-bg-icon">&#10013;</div>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/><path d="M12 12l10-5"/><path d="M12 12v10"/></svg>
+            <span class="img-label">Faith &bull; Service</span>
+          </div>
+          <div class="login-image-card">
+            <div class="img-bg-icon">&#10010;</div>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v12"/><path d="M6 12h12"/></svg>
+            <span class="img-label">Community &bull; Mission</span>
+          </div>
+        </div>
+        <div class="login-footer-bar">
+          <span>Email: info@fstphilippines.org &nbsp;|&nbsp; Phone: +63 2 8123 4567</span>
+        </div>
+      </div>
+
+      <div class="login-right">
+        <div class="login-vertical-divider"></div>
+        <div class="login-panel">
+          <h2>Login Panel</h2>
+          <div class="login-error" id="loginError"></div>
+          <form id="loginForm" onsubmit="return handleLogin(event)">
+            <div class="field">
+              <label for="emailInput">Username</label>
+              <input type="text" id="emailInput" placeholder="Enter your username" required>
+            </div>
+            <div class="field">
+              <label for="passwordInput">Password</label>
+              <input type="password" id="passwordInput" placeholder="Enter your password" required>
+            </div>
+            <button type="submit" class="login-btn" id="loginBtn">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              Secure Login
+            </button>
+          </form>
+          <div class="login-demo">
+            Demo: <code>superadmin@fst.org</code> / <code>admin123</code><br>
+            <code>admin@fst.org</code> / <code>admin456</code><br>
+            <code>moderator@fst.org</code> / <code>mod123</code>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<script src="js/store.js"></script>
+<script src="js/auth.js"></script>
+<script>
+function handleLogin(e) {
+  e.preventDefault();
+  var email = document.getElementById('emailInput').value.trim();
+  var password = document.getElementById('passwordInput').value;
+  var errorEl = document.getElementById('loginError');
+  var btn = document.getElementById('loginBtn');
+
+  errorEl.classList.remove('show');
+  btn.disabled = true;
+  btn.innerHTML = 'Signing in...';
+
+  fetch('/api/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: email, password: password })
+  })
+    .then(function(res) {
+      return res.json().then(function(data) {
+        return { status: res.status, data: data };
+      });
+    })
+    .then(function(result) {
+      if (result.status === 200 && result.data.success) {
+        var user = result.data.data.user;
+        var token = result.data.data.token;
+        Store.set('token', token);
+        Store.set('currentUser', user);
+        localStorage.setItem('fst_token', token);
+        localStorage.setItem('fst_current_user', JSON.stringify(user));
+        btn.innerHTML = 'Redirecting...';
+
+        if (user.role === 'superadmin') {
+          window.location.href = 'superadmin.html';
+        } else if (user.role === 'admin' || user.role === 'moderator') {
+          window.location.href = 'dashboard.html';
+        } else {
+          throw new Error('Access denied');
+        }
+      } else {
+        throw new Error(result.data.error || 'Login failed');
+      }
+    })
+    .catch(function(err) {
+      errorEl.textContent = err.message || 'Login failed';
+      errorEl.classList.add('show');
+      btn.disabled = false;
+      btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Secure Login';
+    });
+
+  return false;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  var savedToken = Store.get('token');
+  var savedUser = Store.get('currentUser');
+
+  if (!savedToken || !savedUser) {
+    try {
+      savedToken = savedToken || localStorage.getItem('fst_token');
+      savedUser = savedUser || JSON.parse(localStorage.getItem('fst_current_user') || 'null');
+      if (savedToken && savedUser) {
+        Store.set('token', savedToken);
+        Store.set('currentUser', savedUser);
+      }
+    } catch (e) {
+      savedToken = null;
+      savedUser = null;
+    }
+  }
+
+  if (savedToken && savedUser) {
+    if (savedUser.role === 'superadmin') {
+      window.location.href = 'superadmin.html';
+    } else if (savedUser.role === 'admin' || savedUser.role === 'moderator') {
+      window.location.href = 'dashboard.html';
+    }
+  }
+});
+</script>
+</body>
+</html>

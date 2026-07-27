@@ -1,0 +1,10 @@
+{
+  "name": "fst-sisters-database",
+  "version": "1.0.0",
+  "description": "FST Sisters Database Management System",
+  "scripts": {
+    "start": "node backend/server.js",
+    "dev": "node backend/server.js",
+    "backend": "node backend/server.js"
+  }
+}
