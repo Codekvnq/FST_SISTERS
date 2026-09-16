@@ -486,8 +486,9 @@ function roleCan(viewName) {
   if (viewName === 'settings') return getRolePerm(role, 'settings');
   if (viewName === 'documents') return getRolePerm(role, 'docs');
   if (viewName === 'dashboard') return getRolePerm(role, 'view');
+  if (viewName === 'activity') return getRolePerm(role, 'activity');
   if (role === 'admin' || role === 'superadmin') {
-    return viewName === 'analytics' || viewName === 'activity' || viewName === 'reminders';
+    return viewName === 'analytics' || viewName === 'reminders';
   }
   if (role === 'moderator') {
     return viewName === 'reminders';
@@ -2535,12 +2536,12 @@ function renderAdminView() {
     { key: 'backup', label: 'Backup' },
     { key: 'reminders', label: 'Reminders' },
     { key: 'users', label: 'Users' },
-    { key: 'settings', label: 'Settings' }
+    { key: 'activity', label: 'Activity' }
   ];
   var rolePermDefault = {
-    superadmin: { view: true, edit: true, docs: true, export: true, backup: true, reminders: true, users: true, settings: true },
-    admin: { view: true, edit: true, docs: true, export: true, backup: false, reminders: false, users: false, settings: true },
-    moderator: { view: true, edit: false, docs: true, export: false, backup: false, reminders: false, users: false, settings: true }
+    superadmin: { view: true, edit: true, docs: true, export: true, backup: true, reminders: true, users: true, activity: true },
+    admin: { view: true, edit: true, docs: true, export: true, backup: false, reminders: false, users: false, activity: true },
+    moderator: { view: true, edit: false, docs: true, export: false, backup: false, reminders: false, users: false, activity: false }
   };
   var rolePerms = (function(){ try { return JSON.parse(localStorage.getItem(Store.prefix + 'rolePerms') || 'null'); } catch(e){ return null; } })() || {};
   var permRows = '';
@@ -3262,9 +3263,9 @@ function getRolePerm(role, key) {
   var prefs = {};
   try { prefs = JSON.parse(localStorage.getItem(Store.prefix + 'rolePerms') || '{}'); } catch(e) {}
   var base = {
-    superadmin: { view: true, edit: true, docs: true, export: true, backup: true, reminders: true, users: true, settings: true },
-    admin: { view: true, edit: true, docs: true, export: true, backup: false, reminders: false, users: false, settings: true },
-    moderator: { view: true, edit: false, docs: true, export: false, backup: false, reminders: false, users: false, settings: true }
+    superadmin: { view: true, edit: true, docs: true, export: true, backup: true, reminders: true, users: true, settings: true, activity: true },
+    admin: { view: true, edit: true, docs: true, export: true, backup: false, reminders: false, users: false, settings: true, activity: true },
+    moderator: { view: true, edit: false, docs: true, export: false, backup: false, reminders: false, users: false, settings: true, activity: false }
   };
   var saved = prefs[role] || {};
   var cur = {};
