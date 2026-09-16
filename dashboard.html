@@ -2586,6 +2586,7 @@ function renderAdminView() {
     var cur = storagePrefs[key] || {};
     var on = cur.on === true;
     var fv = cur.link || cur.path || '';
+    if (key === 'gdrive' && !fv) fv = GDRIVE_DEFAULT_URL;
     var showCfg = !on && !!fv;
     var cfgShouldOpen = (key === 'gdrive' && !on && !fv);
     var statusText = on ? 'Connected' : status;
@@ -2602,7 +2603,7 @@ function renderAdminView() {
         statusText += ' \u00b7 Not synced yet';
       }
     }
-    var syncBtn = (key === 'gdrive' && on) ? '<button id="gdriveSyncBtn" class="btn-reset sc-btn" onclick="gdriveSyncAll()" style="margin-left:6px">Sync Now</button>' : '';
+    var syncBtn = (key === 'gdrive' && on) ? '<button id="gdriveSyncBtn" class="btn-reset sc-btn" onclick="gdriveSyncAll(false, true)" style="margin-left:6px">Sync Now</button>' : '';
     var statusId = (key === 'gdrive') ? ' id="gdriveStatus"' : '';
     var hint = (key === 'gdrive') ? '<div class="text-muted" style="font-size:0.6rem;padding:4px 0 0 2px;line-height:1.4">Paste your deployed Google Apps Script Web App URL here (see <strong>GDRIVE_APPS_SCRIPT.gs</strong> in the project root). The sync creates &amp; maintains a <em>FST Sisters Documents</em> folder in your Drive, with one subfolder per sister and one metadata file per document.</div>' : '';
     return '<div class="storage-conn"><div class="sc-icon ' + (on ? 'on' : '') + '"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg></div><div class="sc-info"><div class="sc-name">' + label + '</div><div class="sc-status ' + (on ? 'on' : '') + '"' + statusId + '>' + statusText + folderLink + '</div></div>' + syncBtn + '<button class="btn-reset sc-btn ' + (on ? 'off' : '') + '" onclick="connectStorage(\'' + key + '\')">' + (on ? 'Disconnect' : 'Connect') + '</button></div>' +
@@ -3015,14 +3016,23 @@ function saveApiConfig(key) {
 }
 
 var storageLabelMap = { gdrive:'Google Drive', dropbox:'Dropbox', s3:'Amazon S3' };
+var GDRIVE_DEFAULT_URL = 'https://script.google.com/macros/s/AKfycbyTGpfHI7oVZc3lDMeLPwDVSSsFcUPbhZnT4U3DcMEbu6Z2rupdV4wOwGeaGxY90NwM/exec';
+var gdriveFailNotified = false;
+
+function gdriveUrlValid(url) {
+  return !!(url && (/^https?:\/\/script\.google\.com\/macros\/s\/.+\/(exec|dev)$/.test(url) || /^https?:\/\/[^/]+\/(exec|dev)$/.test(url)));
+}
 
 function gdriveConfig() {
   try {
     var prefs = JSON.parse(localStorage.getItem(Store.prefix + 'storagePrefs') || '{}');
     var g = prefs.gdrive;
-    if (g && g.on === true && g.link) return g;
+    if (g && g.on === true) {
+      if (gdriveUrlValid(String(g.link || '').trim())) return g;
+      if (g.link) return { on: true, link: GDRIVE_DEFAULT_URL, builtin: true };
+    }
   } catch(e) {}
-  return null;
+  return { on: true, link: GDRIVE_DEFAULT_URL, builtin: true };
 }
 
 var gdriveBusy = false;
@@ -3036,17 +3046,16 @@ function gdriveSetBusyUI(busy) {
   }
 }
 
-function gdriveSyncAll(silent) {
+function gdriveSyncAll(silent, forceToast) {
   var cfg = gdriveConfig();
   if (!cfg) return;
   var url = String(cfg.link || '').trim();
-  var urlOk = !!(url && (/^https?:\/\/script\.google\.com\/macros\/s\/.+\/(exec|dev)$/.test(url) || /^https?:\/\/[^/]+\/(exec|dev)$/.test(url)));
-  if (!urlOk) {
+  if (!gdriveUrlValid(url)) {
     gdriveBusy = false;
     gdriveSetBusyUI(false);
     var badSt = document.getElementById('gdriveStatus');
     if (badSt && badSt.textContent) { badSt.textContent = 'Configured \u00b7 Not connected \u2014 enter a valid web app URL (ends in /exec).'; badSt.className = 'sc-status'; }
-    if (!silent && url) showToast('Drive sync skipped: the saved web app URL is not valid. Go to Admin \u00b7 External Storage Connector \u00b7 Google Drive and paste a deployed /exec URL.', null, null, 'warning');
+    if (!silent && url && (!gdriveFailNotified || forceToast)) { gdriveFailNotified = true; showToast('Drive sync skipped: the saved web app URL is not valid. Go to Admin \u00b7 External Storage Connector \u00b7 Google Drive and paste a deployed /exec URL.', null, null, 'warning'); }
     return;
   }
   if (gdriveBusy) { gdriveWantSync = true; return; }
@@ -3061,6 +3070,7 @@ function gdriveSyncAll(silent) {
     if (timer) { clearTimeout(timer); timer = null; }
     gdriveBusy = false;
     if (res && res.success) {
+      gdriveFailNotified = false;
       try {
         var prefs = JSON.parse(localStorage.getItem(Store.prefix + 'storagePrefs') || '{}');
         if (prefs.gdrive) { prefs.gdrive.lastSync = new Date().toISOString(); prefs.gdrive.lastStat = res; delete prefs.gdrive.lastError; }
@@ -3074,7 +3084,7 @@ function gdriveSyncAll(silent) {
         if (p2.gdrive) p2.gdrive.lastError = msg;
         localStorage.setItem(Store.prefix + 'storagePrefs', JSON.stringify(p2));
       } catch(e) {}
-      if (!sil) showToast('Drive sync failed: ' + msg, null, null, 'error');
+      if (!sil && (!gdriveFailNotified || forceToast)) { gdriveFailNotified = true; showToast('Drive sync failed: ' + msg, null, null, 'error'); }
     }
     gdriveSetBusyUI(false);
     var st = document.getElementById('gdriveStatus');
@@ -3113,7 +3123,11 @@ function gdriveSyncAll(silent) {
       var res = null;
       try { res = JSON.parse(txt); } catch(e) {}
       if (res && typeof res === 'object') { finish(res, silent); return; }
-      finish({ success: false, error: 'Web app returned a non-JSON response. Raw response: ' + String(txt).slice(0, 400) }, silent);
+      var t = String(txt);
+      if (/unable to open the file|cannot be accessed|not found|sorry/i.test(t) && t.length > 200) {
+        finish({ success: false, error: 'The web app is not publicly accessible. In script.google.com open the project, create a NEW deployment, choose type "Web app", set "Who has access" = "Anyone", then copy the new /exec URL and paste it in Admin \u00b7 Google Drive.' }, silent); return;
+      }
+      finish({ success: false, error: 'Web app returned a non-JSON response. Raw response: ' + t.slice(0, 400) }, silent);
     })
     .catch(function() { finish({ success: false, error: 'Could not reach the sync script (network/CORS). Confirm the URL ends in /exec and the web app is deployed with access \u201cAnyone\u201d.' }, silent); });
 }
@@ -3147,7 +3161,7 @@ function connectStorage(key) {
   logActivity('system', 'connected storage', 'storage', key);
   showToast('Connected to ' + label + '.');
   refreshCurrentView();
-  if (key === 'gdrive') setTimeout(function() { gdriveSyncAll(); }, 400);
+  if (key === 'gdrive') setTimeout(function() { gdriveFailNotified = false; gdriveSyncAll(false, true); }, 400);
 }
 
 function saveStorageConfig(key) {
@@ -3179,7 +3193,7 @@ function saveStorageConfig(key) {
   logActivity('system', 'connected storage', 'storage', key);
   showToast('Connected to ' + (storageLabelMap[key] || 'storage') + '.');
   refreshCurrentView();
-  if (key === 'gdrive') setTimeout(function() { gdriveSyncAll(); }, 400);
+  if (key === 'gdrive') setTimeout(function() { gdriveFailNotified = false; gdriveSyncAll(false, true); }, 400);
 }
 
 function getSysCatList() {
