@@ -68,6 +68,9 @@ router.post('/', protect, authorize('admin', 'superadmin'), async function(req, 
     await logActivity('doc.create', 'document', doc.id, doc.originalName || doc.fileName, 'Added document' + (doc.driveFileId ? ' (stored in Google Drive)' : ''), req.user);
     res.status(201).json({ success: true, data: doc });
   } catch (err) {
+    if (/UNIQUE|unique|duplicate/i.test(err.message)) {
+      return res.status(409).json({ success: false, error: 'This document already exists for the selected sister.' });
+    }
     res.status(500).json({ success: false, error: err.message });
   }
 });

@@ -38,11 +38,16 @@ var schemaReady = new Promise(function(resolve, reject) {
         ensureColumn('documents', 'checksumSha256', 'TEXT'),
         ensureColumn('documents', 'uploadStatus', 'TEXT'),
         ensureColumn('documents', 'thumbnailPath', 'TEXT')
-      ]).then(function() {
+]).then(function() {
         return new Promise(function(resolveBackfill, rejectBackfill) {
           db.run('UPDATE documents SET uploadedAt = createdAt WHERE uploadedAt IS NULL AND createdAt IS NOT NULL', function(bErr) {
             if (bErr) return rejectBackfill(bErr);
-            resolveBackfill(true);
+            db.run('CREATE UNIQUE INDEX IF NOT EXISTS idx_docs_sister_file ON documents(sisterId, originalName) WHERE deletedAt IS NULL', function(uErr) {
+              if (uErr && !/already exists|already exists/i.test(String(uErr.message))) {
+                console.warn('Could not create unique index on documents(sisterId, originalName): ' + uErr.message);
+              }
+              resolveBackfill(true);
+            });
           });
         });
       }).then(function() {

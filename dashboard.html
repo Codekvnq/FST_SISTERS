@@ -5437,7 +5437,15 @@ function submitEditDoc(e, docId) {
   var subcategory = document.getElementById('editSubcat').value;
   var fileName = document.getElementById('editFileName').value.trim();
   if (!sisterId || !category || !fileName) { alert('Sister, Category, and File Name are required.'); return; }
-  
+
+  var allDocs = Store.get('documents', []);
+  for (var ei = 0; ei < allDocs.length; ei++) {
+    if (allDocs[ei].id !== docId && allDocs[ei].sisterId === sisterId && allDocs[ei].originalName === fileName) {
+      showToast('A document with the same name already exists for this sister. Please use a different name or select the correct sister.', null, null, 'error');
+      return;
+    }
+  }
+
   Data.updateDocument(docId, { sisterId: sisterId, category: category, subcategory: subcategory, originalName: fileName, fileName: fileName });
   document.getElementById('docEditModal').remove();
   
@@ -5466,10 +5474,16 @@ function submitDocUpload(e) {
   var s = Data.getSisterById(sid);
   var sName = s ? Utils.sisterName(s) : 'Unknown';
   var uploadedCount = 0;
+  var skippedCount = 0;
   var firstId = null;
 
   for (var fi = 0; fi < files.length; fi++) {
     var file = files[fi];
+    var isDupe = false;
+    for (var di = 0; di < docs.length; di++) {
+      if (docs[di].sisterId === sid && docs[di].originalName === file.name) { isDupe = true; break; }
+    }
+    if (isDupe) { skippedCount++; continue; }
     var newDoc = {
       id: 'doc_' + new Date().getTime() + '_' + fi,
       sisterId: sid,
@@ -5496,7 +5510,7 @@ function submitDocUpload(e) {
   renderDocSidebar();
   updateStatusDot();
   refreshDashboardWidgets();
-  showToast(uploadedCount + ' document' + (uploadedCount === 1 ? '' : 's') + ' added to ' + sName, null, null, 'success');
+  showToast(uploadedCount + ' document' + (uploadedCount === 1 ? '' : 's') + ' added to ' + sName + (skippedCount > 0 ? ' (' + skippedCount + ' duplicate' + (skippedCount === 1 ? '' : 's') + ' skipped)' : ''), null, null, uploadedCount > 0 ? 'success' : 'warning');
   flashLoading(650, 'Uploading');
   gdriveSyncAll();
 }
