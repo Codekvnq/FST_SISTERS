@@ -1,16 +1,17 @@
-var bcrypt = require('bcryptjs');
 var User = require('../models/User');
 var Sister = require('../models/Sister');
 var Document = require('../models/Document');
+var { encrypt } = require('./crypto');
 
 var seedData = async function() {
+  await User.ensureSchema();
   var userCount = await User.countDocuments();
   var hasData = userCount > 0;
 
   var users = [
-    { id: 'user_001', email: 'superadmin@fst.org', password: await bcrypt.hash('admin123', 10), role: 'superadmin', sisterId: null },
-    { id: 'user_002', email: 'admin@fst.org', password: await bcrypt.hash('admin456', 10), role: 'admin', sisterId: null },
-    { id: 'user_003', email: 'moderator@fst.org', password: await bcrypt.hash('mod123', 10), role: 'moderator', sisterId: null }
+    { id: 'user_001', username: 'superadmin', email: 'superadmin@fst.org', password: encrypt('admin123'), role: 'superadmin', sisterId: null },
+    { id: 'user_002', username: 'admin', email: 'admin@fst.org', password: encrypt('admin456'), role: 'admin', sisterId: null },
+    { id: 'user_003', username: 'moderator', email: 'moderator@fst.org', password: encrypt('mod123'), role: 'moderator', sisterId: null }
   ];
 
   if (!hasData) {
@@ -22,11 +23,11 @@ var seedData = async function() {
       var demo = users[i];
       var existingByEmail = await User.findOne({ email: demo.email });
       if (existingByEmail) {
-        await User.findOneAndUpdate({ email: demo.email }, { $set: { password: demo.password, role: demo.role, sisterId: demo.sisterId } });
+        await User.findOneAndUpdate({ email: demo.email }, { $set: { username: demo.username, password: demo.password, role: demo.role, sisterId: demo.sisterId } });
       } else {
         var existingById = await User.findOne({ id: demo.id });
         if (existingById) {
-          await User.findOneAndUpdate({ id: demo.id }, { $set: { email: demo.email, password: demo.password, role: demo.role, sisterId: demo.sisterId } });
+          await User.findOneAndUpdate({ id: demo.id }, { $set: { username: demo.username, email: demo.email, password: demo.password, role: demo.role, sisterId: demo.sisterId } });
         } else {
           await User.create(demo);
         }

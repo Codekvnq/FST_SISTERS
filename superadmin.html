@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin Panel - FST Sisters Database</title>
 <link rel="stylesheet" href="css/fst.css">
+<link rel="icon" type="image/jpeg" href="images/fst-logo.jpg">
 </head>
 <body>
 
@@ -63,6 +64,7 @@
                 <th>Email</th>
                 <th>Role</th>
                 <th>Sister ID</th>
+                <th>Contact</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -106,11 +108,13 @@
 <script src="js/store.js"></script>
 <script src="js/utils.js"></script>
 <script src="js/auth.js"></script>
+<script src="js/offline.js"></script>
 <script>
 function renderSidebar() {
   var user = Auth.currentUser;
+  var dispName = (user.username || user.email || '').split('@')[0] || user.email || 'User';
   document.getElementById('sidebarFooter').innerHTML =
-    '<div class="sidebar-user"><div class="sidebar-avatar">' + Utils.getInitials(user.email.split('@')[0],'') + '</div><div class="sidebar-user-info"><div class="sidebar-user-name">' + user.email.split('@')[0] + '</div><div class="sidebar-user-role">' + user.role + '</div></div></div>';
+    '<div class="sidebar-user"><div class="sidebar-avatar">' + Utils.getInitials(dispName,'') + '</div><div class="sidebar-user-info"><div class="sidebar-user-name">' + (user.username || user.email) + '</div><div class="sidebar-user-role">' + user.role + '</div></div></div>';
 }
 
 function renderStats() {
@@ -123,16 +127,24 @@ function renderStats() {
 }
 
 function renderUsers() {
+  var esc = function(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); };
   var users = Data.getUsers();
+  users.sort(function(a, b) {
+    var pa = a.role === 'superadmin' ? 0 : 1;
+    var pb = b.role === 'superadmin' ? 0 : 1;
+    if (pa !== pb) return pa - pb;
+    return (a.createdAt || '').localeCompare(b.createdAt || '');
+  });
   document.getElementById('userCount').textContent = users.length + ' users';
   var html = '';
   for (var i = 0; i < users.length; i++) {
     var u = users[i];
     var roleBadge = u.role === 'superadmin' ? 'badge-active' : u.role === 'admin' ? 'badge-retired' : u.role === 'moderator' ? 'badge-warning' : 'badge-inactive';
     html += '<tr>' +
-      '<td><span class="font-medium">' + u.email + '</span></td>' +
+      '<td><span class="font-medium">' + esc(u.displayName || u.username || u.email) + '</span>' + ((u.username && u.username !== u.email) ? '<div style="font-size:0.62rem;color:#646970">' + esc(u.username) + '</div>' : '') + '</td>' +
       '<td><span class="badge ' + roleBadge + '">' + Utils.capitalize(u.role) + '</span></td>' +
       '<td class="text-muted">' + (u.sisterId || '-') + '</td>' +
+      '<td class="text-muted">' + (u.phone ? esc(u.phone) : '-') + (u.email ? '<div style="font-size:0.62rem;color:#646970">' + esc(u.email) + '</div>' : '') + '</td>' +
       '<td><div class="table-actions"><button onclick="deleteUser(\'' + u.id + '\')" title="Delete">' +
       '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>' +
       '</button></div></td>' +
@@ -143,9 +155,22 @@ function renderUsers() {
 
 function deleteUser(id) {
   if (!confirm('Delete this user?')) return;
-  var users = Store.get('users', []).filter(function(u) { return u.id !== id; });
-  Store.set('users', users);
-  renderUsers();
+  var token = localStorage.getItem('fst_token') || '';
+  fetch('/api/users/' + id, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } })
+    .then(function(res) { return res.json(); })
+    .then(function(result) {
+      if (result && result.success) {
+        fetch('/api/users', { headers: { 'Authorization': 'Bearer ' + token } })
+          .then(function(res2) { return res2.json(); })
+          .then(function(d) { if (d && d.success) Store.set('users', d.data); renderUsers(); renderStats(); })
+          .catch(function() { renderUsers(); });
+      } else {
+        alert((result && result.error) || 'Could not delete user');
+      }
+    })
+    .catch(function() {
+      alert('Could not reach the server');
+    });
 }
 
 function exportData() {
@@ -181,7 +206,28 @@ function handleImportFile(file) {
   reader.readAsText(file);
 }
 
-function doLogout() { Auth.logout(); window.location.href = 'index.html'; }
+function flashLoading(ms, message) {
+  ms = ms || 600;
+  message = message || 'Saving…';
+  var el = document.getElementById('miniBusy');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'miniBusy';
+    el.className = 'mini-busy';
+    el.innerHTML = '<span class="mini-busy-spin"></span><span class="mini-busy-text"></span>';
+    document.body.appendChild(el);
+  }
+  el.querySelector('.mini-busy-text').textContent = message;
+  el.classList.add('show');
+  clearTimeout(flashLoading._t);
+  flashLoading._t = setTimeout(function() { el.classList.remove('show'); }, ms);
+}
+
+function doLogout() {
+  flashLoading(900, 'Signing out…');
+  Auth.logout();
+  setTimeout(function() { window.location.href = 'index.html?loggedout=1'; }, 900);
+}
 
 document.addEventListener('DOMContentLoaded', function() {
   if (!Auth.guardSuperAdmin()) return;

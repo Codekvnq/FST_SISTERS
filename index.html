@@ -5,160 +5,222 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FST Sisters Database</title>
 <link rel="stylesheet" href="css/fst.css">
+<link rel="icon" type="image/jpeg" href="images/fst-logo.jpg">
 </head>
 <body>
 
 <div id="app" class="login-page">
 
-  <div class="login-header">
-    <div class="login-header-inner">
+  <div class="login-container">
+
+    <div class="login-header">
       <div class="login-header-left">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/><path d="M12 12l10-5"/></svg>
-        <span>FST Sisters Database</span>
+        <div class="main-logo">
+          <img class="main-logo-img" src="images/fst-logo.jpg" alt="FST Sisters Logo">
+          <span>FST Sisters Database</span>
+        </div>
       </div>
       <div class="login-header-right">
-        <div class="logo-badge">Franciscan Sisters</div>
-        <div class="logo-badge">FST Philippines</div>
+        <div class="logo-group">
+          <div class="logo-badge">Franciscan Sisters</div>
+          <div class="logo-badge">FST Philippines</div>
+        </div>
       </div>
     </div>
-  </div>
 
-  <div class="login-divider"></div>
+    <div class="login-divider"></div>
 
-  <div class="login-main">
-    <div class="login-main-inner">
+    <div class="login-main">
+      <div class="login-main-inner">
 
-      <div class="login-left">
-        <h1>Welcome to FST Sisters Database</h1>
-        <p class="desc">Enter a valid username and password to gain access to the FST Sisters Database Management System.</p>
-        <div class="login-images">
-          <div class="login-image-card">
-            <div class="img-bg-icon">&#10013;</div>
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/><path d="M12 12l10-5"/><path d="M12 12v10"/></svg>
-            <span class="img-label">Faith &bull; Service</span>
-          </div>
-          <div class="login-image-card">
-            <div class="img-bg-icon">&#10010;</div>
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v12"/><path d="M6 12h12"/></svg>
-            <span class="img-label">Community &bull; Mission</span>
+        <div class="login-left">
+          <h1>Welcome to FST Sisters Database</h1>
+          <p class="desc">Enter a valid username and password to gain access to the FST Sisters Database Management System.</p>
+          <div class="login-images">
+            <div class="login-image-card">
+              <div class="img-bg-icon">&#10013;</div>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/><path d="M12 12l10-5"/><path d="M12 12v10"/></svg>
+              <img class="card-img" src="images/fst-img-1.jpeg" alt="Faith & Service" onerror="this.style.display='none';">
+              <span class="img-label">Faith &bull; Service</span>
+            </div>
+            <div class="login-image-card">
+              <div class="img-bg-icon">&#10010;</div>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v12"/><path d="M6 12h12"/></svg>
+              <img class="card-img" src="images/fst-img-2.jpeg" alt="Community & Mission" onerror="this.style.display='none';">
+              <span class="img-label">Community &bull; Mission</span>
+            </div>
           </div>
         </div>
-        <div class="login-footer-bar">
-          <span>Email: info@fstphilippines.org &nbsp;|&nbsp; Phone: +63 2 8123 4567</span>
-        </div>
-      </div>
 
-      <div class="login-right">
         <div class="login-vertical-divider"></div>
-        <div class="login-panel">
-          <h2>Login Panel</h2>
-          <div class="login-error" id="loginError"></div>
-          <form id="loginForm" onsubmit="return handleLogin(event)">
-            <div class="field">
-              <label for="emailInput">Username</label>
-              <input type="text" id="emailInput" placeholder="Enter your username" required>
+
+        <div class="login-right">
+          <div class="login-panel">
+            <h2>Login Panel</h2>
+            <form id="loginForm" onsubmit="return handleLogin(event)">
+              <div class="field">
+                <label for="emailInput">Username</label>
+                <input type="text" id="emailInput" placeholder="Enter your username" required>
+              </div>
+              <div class="field">
+                <label for="passwordInput">Password</label>
+                <input type="password" id="passwordInput" placeholder="Enter your password" required>
+              </div>
+              <button type="submit" class="login-btn" id="loginBtn">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                Secure Login
+              </button>
+            </form>
+            <div class="login-demo" id="loginDemoHint">
+              Check <code>.env.example</code> for default credentials.
             </div>
-            <div class="field">
-              <label for="passwordInput">Password</label>
-              <input type="password" id="passwordInput" placeholder="Enter your password" required>
-            </div>
-            <button type="submit" class="login-btn" id="loginBtn">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-              Secure Login
-            </button>
-          </form>
-          <div class="login-demo">
-            Demo: <code>superadmin@fst.org</code> / <code>admin123</code><br>
-            <code>admin@fst.org</code> / <code>admin456</code><br>
-            <code>moderator@fst.org</code> / <code>mod123</code>
           </div>
         </div>
-      </div>
 
+      </div>
     </div>
+
+    <div class="login-footer-bar">
+      <span>Email: info@fstphilippines.org &nbsp;|&nbsp; Phone: +63 2 8123 4567</span>
+    </div>
+
   </div>
 
+</div>
+
+<div id="toastContainer" class="login-toast-container"></div>
+
+<div id="loginLoader" class="login-loader" style="display:none" aria-hidden="true">
+  <div class="login-loader-spin">
+    <div class="login-loader-ring"></div>
+    <div class="login-loader-dots"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+  </div>
+  <div class="login-loader-text">Signing in, please wait…</div>
 </div>
 
 <script src="js/store.js"></script>
 <script src="js/auth.js"></script>
 <script>
-function handleLogin(e) {
-  e.preventDefault();
-  var email = document.getElementById('emailInput').value.trim();
-  var password = document.getElementById('passwordInput').value;
-  var errorEl = document.getElementById('loginError');
-  var btn = document.getElementById('loginBtn');
+var toastTimer = null;
+function showToast(message, type) {
+  type = type || 'error';
+  var container = document.getElementById('toastContainer');
+  container.innerHTML = '';
+  if (toastTimer) clearTimeout(toastTimer);
+  var t = document.createElement('div');
+  t.className = 'login-toast login-toast-' + type;
+  t.innerHTML = '<span>' + message + '</span><button class="toast-close" aria-label="Dismiss">\u00d7</button>';
+  t.querySelector('.toast-close').onclick = function() { dismissToast(t); };
+  container.appendChild(t);
+  toastTimer = setTimeout(function() { dismissToast(t); }, 4200);
+  function dismissToast(el) {
+    if (!el.parentNode) return;
+    if (toastTimer) { clearTimeout(toastTimer); toastTimer = null; }
+    el.classList.add('fade-out');
+    setTimeout(function() { if (el.parentNode) el.remove(); }, 320);
+  }
+}
 
-  errorEl.classList.remove('show');
-  btn.disabled = true;
-  btn.innerHTML = 'Signing in...';
-
-  fetch('/api/auth/login', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: email, password: password })
-  })
-    .then(function(res) {
-      return res.json().then(function(data) {
-        return { status: res.status, data: data };
-      });
+function loginWithBackend(username, password) {
+  return new Promise(function(resolve, reject) {
+    var done = false;
+    var timer = setTimeout(function() { if (!done) { done = true; reject(new Error('Server unreachable')); } }, 5000);
+    fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: username, email: username, password: password })
     })
-    .then(function(result) {
-      if (result.status === 200 && result.data.success) {
-        var user = result.data.data.user;
-        var token = result.data.data.token;
-        Store.set('token', token);
-        Store.set('currentUser', user);
-        localStorage.setItem('fst_token', token);
-        localStorage.setItem('fst_current_user', JSON.stringify(user));
-        btn.innerHTML = 'Redirecting...';
-
-        if (user.role === 'superadmin') {
-          window.location.href = 'superadmin.html';
-        } else if (user.role === 'admin' || user.role === 'moderator') {
-          window.location.href = 'dashboard.html';
+      .then(function(res) { return res.json().then(function(data) { return { status: res.status, data: data }; }); })
+      .then(function(result) {
+        if (done) return;
+        done = true; clearTimeout(timer);
+        if (result.status === 200 && result.data && result.data.success) {
+          resolve({ success: true, token: result.data.data.token, user: result.data.data.user });
         } else {
-          throw new Error('Access denied');
+          resolve({ success: false, error: (result.data && result.data.error) || 'Invalid username or password' });
         }
-      } else {
-        throw new Error(result.data.error || 'Login failed');
+      })
+      .catch(function() { if (done) return; done = true; clearTimeout(timer); reject(new Error('Server unreachable')); });
+  });
+}
+
+function setLoginBtn(loading) {
+  var btn = document.getElementById('loginBtn');
+  var inputs = document.querySelectorAll('#loginForm input');
+  btn.disabled = loading;
+  btn.innerHTML = loading
+    ? 'Signing in...'
+    : '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Secure Login';
+  for (var i = 0; i < inputs.length; i++) inputs[i].disabled = loading;
+}
+
+function showLoader() {
+  var app = document.getElementById('app');
+  app.classList.add('login-navigating');
+  var loader = document.getElementById('loginLoader');
+  loader.style.display = 'flex';
+}
+
+function completeLogin(user) {
+  Store.set('currentUser', user);
+  Auth.currentUser = user;
+  localStorage.setItem('fst_current_user', JSON.stringify(user));
+  try { Auth.recordLogin(); } catch (e) {}
+  try { localStorage.setItem('fst_activeView', 'dashboard'); } catch (e) {}
+  showLoader();
+  setTimeout(function() { window.location.href = 'dashboard.html'; }, 1300);
+}
+
+function loadDemoDefaults() {
+  var hint = document.getElementById('loginDemoHint');
+  fetch('/api/auth/defaults')
+    .then(function(res) { return res.json().then(function(d) { return { status: res.status, data: d }; }); })
+    .then(function(result) {
+      if (result.status === 200 && result.data && result.data.success && Array.isArray(result.data.data) && result.data.data.length) {
+        var html = 'Demo accounts: ';
+        var chips = result.data.data.map(function(c) {
+          return '<code>' + c.username + '</code> / <code>' + c.password + '</code>';
+        });
+        hint.innerHTML = 'Demo accounts: ' + chips.join('<br>');
       }
     })
-    .catch(function(err) {
-      errorEl.textContent = err.message || 'Login failed';
-      errorEl.classList.add('show');
-      btn.disabled = false;
-      btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Secure Login';
-    });
+    .catch(function() {});
+}
 
+function handleLogin(e) {
+  e.preventDefault();
+  var username = document.getElementById('emailInput').value.trim();
+  var password = document.getElementById('passwordInput').value;
+  if (!username || !password) { showToast('Please enter your username and password'); return false; }
+
+  setLoginBtn(true);
+  loginWithBackend(username, password)
+    .then(function(result) {
+      if (result.success) {
+        Store.set('token', result.token);
+        localStorage.setItem('fst_token', result.token);
+        completeLogin(result.user);
+      } else {
+        setLoginBtn(false);
+        showToast(result.error || 'Invalid username or password');
+      }
+    })
+    .catch(function() {
+      setLoginBtn(false);
+      showToast('Unable to reach the server. Please ensure the backend is running.');
+    });
   return false;
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-  var savedToken = Store.get('token');
-  var savedUser = Store.get('currentUser');
-
-  if (!savedToken || !savedUser) {
-    try {
-      savedToken = savedToken || localStorage.getItem('fst_token');
-      savedUser = savedUser || JSON.parse(localStorage.getItem('fst_current_user') || 'null');
-      if (savedToken && savedUser) {
-        Store.set('token', savedToken);
-        Store.set('currentUser', savedUser);
-      }
-    } catch (e) {
-      savedToken = null;
-      savedUser = null;
-    }
+  var params = new URLSearchParams(window.location.search);
+  if (params.get('loggedout')) {
+    setTimeout(function() { showToast('You have been logged out.', 'info'); }, 400);
   }
-
-  if (savedToken && savedUser) {
-    if (savedUser.role === 'superadmin') {
-      window.location.href = 'superadmin.html';
-    } else if (savedUser.role === 'admin' || savedUser.role === 'moderator') {
-      window.location.href = 'dashboard.html';
-    }
+  loadDemoDefaults();
+  var savedUser = Auth.init();
+  if (savedUser && (savedUser.role === 'superadmin' || savedUser.role === 'admin' || savedUser.role === 'moderator')) {
+    window.location.href = 'dashboard.html';
   }
 });
 </script>

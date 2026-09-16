@@ -5,12 +5,34 @@ services:
     region: oregon
     buildCommand: cd backend && npm install
     startCommand: cd backend && node server.js
+    disk:
+      name: fst-data
+      mountPath: /var/data
+      sizeGB: 1
     envVars:
-      - key: MONGO_URI
-        sync: false
-      - key: JWT_SECRET
-        generateValue: true
+      - key: NODE_ENV
+        value: production
       - key: PORT
         value: 10000
+      - key: DB_FILE
+        value: /var/data/fst-sisters.db
+      - key: JWT_SECRET
+        generateValue: true
+      - key: FST_PASSWORD_KEY
+        generateValue: true
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: GOOGLE_SERVICE_ACCOUNT
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_REFRESH_TOKEN
+        sync: false
+      - key: BACKUP_KEEP
+        value: "14"
     healthCheckPath: /api/health
     autoDeploy: true

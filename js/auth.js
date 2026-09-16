@@ -3,9 +3,9 @@
   if (Store.get('initialized')) return;
 
   Store.set('users', [
-    { id:'user_1', email:'superadmin@fst.org', password:'admin123', role:'superadmin', sisterId:null },
-    { id:'user_2', email:'admin@fst.org', password:'admin456', role:'admin', sisterId:null },
-    { id:'user_3', email:'moderator@fst.org', password:'mod123', role:'moderator', sisterId:null }
+    { id:'user_001', username:'superadmin', email:'superadmin@fst.org', role:'superadmin', sisterId:null },
+    { id:'user_002', username:'admin', email:'admin@fst.org', role:'admin', sisterId:null },
+    { id:'user_003', username:'moderator', email:'moderator@fst.org', role:'moderator', sisterId:null }
   ]);
 
   Store.set('sisters', [
@@ -26,8 +26,49 @@
     { id:'doc_6', sisterId:'FST-2024-001', category:'education', subcategory:'other', fileName:'diploma_garcia.pdf', originalName:'Diploma - UST.pdf', fileSize:456000, uploadedAt:'2024-01-15' }
   ]);
 
+  Store.set('activityLog', [
+    { id: 'act_seed_' + Date.now(), type: 'system.setup', action: 'Initialized', entityType: 'system', entityName: 'Sample database', entityId: '', detail: 'Seeded ' + Store.get('sisters', []).length + ' sisters and ' + Store.get('documents', []).length + ' documents', userName: 'System', timestamp: new Date().toISOString() }
+  ]);
+
   Store.set('initialized', true);
 })();
+
+/* ==================== USERNAME BACKFILL MIGRATION ==================== */
+(function() {
+  var users = Store.get('users', []);
+  if (!Array.isArray(users) || users.length === 0) return;
+  var changed = false;
+  var DEFAULTS = { 'superadmin@fst.org': 'superadmin', 'admin@fst.org': 'admin', 'moderator@fst.org': 'moderator' };
+  for (var i = 0; i < users.length; i++) {
+    if (!users[i] || (users[i].username && String(users[i].username).trim())) continue;
+    var email = String(users[i].email || '').toLowerCase();
+    var name = DEFAULTS[email] || email.split('@')[0] || ('user_' + (i + 1));
+    users[i].username = name;
+    changed = true;
+  }
+  if (changed) Store.set('users', users);
+})();
+
+/* ==================== API WRITE-THROUGH ==================== */
+function apiToken() {
+  try {
+    var t = Store.get('token');
+    if (t) return t;
+    return localStorage.getItem('fst_token') || '';
+  } catch(e) { return ''; }
+}
+
+function apiPush(method, path, body) {
+  var token = apiToken();
+  if (!token) return;
+  try {
+    fetch(path, {
+      method: method,
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify(body || {})
+    }).catch(function() {});
+  } catch(e) {}
+}
 
 /* ==================== AUTH ==================== */
 var Auth = {
@@ -49,21 +90,73 @@ var Auth = {
     return this.currentUser;
   },
 
-  login: function(email, password) {
+  login: function(identifier, password) {
+    /* Login is handled by the backend against the database. This fallback is
+       intentionally disabled so credentials are never stored or verified locally. */
+    return { success: false, error: 'Check with the server for valid credentials' };
+  },
+
+  recordLogin: function() {
+    var u = this.currentUser;
+    if (!u) return;
     var users = Store.get('users', []);
     for (var i = 0; i < users.length; i++) {
-      if (users[i].email === email && users[i].password === password) {
-        var u = {};
-        for (var k in users[i]) { if (k !== 'password') u[k] = users[i][k]; }
-        this.currentUser = u;
-        Store.set('currentUser', u);
-        return { success: true, user: u };
+      if (users[i].id === u.id || users[i].email === u.email || users[i].username === u.username) {
+        var last = 0;
+        if (users[i].lastLogin) { try { last = new Date(users[i].lastLogin).getTime(); } catch(e) {} }
+        users[i].lastLogin = new Date().toISOString();
+        Store.set('users', users);
+        var now = Date.now();
+        if (!last || (now - last) > 60000) {
+          var log = Store.get('activityLog', []);
+          log.push({
+            id: 'act_' + now + '_' + Math.random().toString(36).slice(2, 6),
+            type: 'auth.login',
+            action: 'Logged in',
+            entityType: 'system',
+entityName: u.username || u.email || '',
+            entityId: u.id || '',
+            detail: 'Role: ' + (u.role || ''),
+            userName: u.name || u.username || (u.email ? u.email.split('@')[0] : ''),
+            userRole: u.role || '',
+            timestamp: new Date().toISOString()
+          });
+          if (log.length > 500) log = log.slice(-500);
+          Store.set('activityLog', log);
+        }
+        return;
       }
     }
-    return { success: false, error: 'Invalid email or password' };
   },
 
   logout: function() {
+    var u = this.currentUser;
+    if (u) {
+      var users = Store.get('users', []);
+      for (var i = 0; i < users.length; i++) {
+if (users[i].id === u.id || users[i].email === u.email || users[i].username === u.username) {
+          users[i].lastLogout = new Date().toISOString();
+          Store.set('users', users);
+          break;
+        }
+      }
+      var log = Store.get('activityLog', []);
+      var now = Date.now();
+      log.push({
+        id: 'act_' + now + '_' + Math.random().toString(36).slice(2, 6),
+        type: 'auth.logout',
+        action: 'Logged out',
+        entityType: 'system',
+        entityName: u.username || u.email || '',
+        entityId: u.id || '',
+        detail: 'Role: ' + (u.role || ''),
+        userName: u.name || u.username || (u.email ? u.email.split('@')[0] : ''),
+        userRole: u.role || '',
+        timestamp: new Date().toISOString()
+      });
+      if (log.length > 500) log = log.slice(-500);
+      Store.set('activityLog', log);
+    }
     this.currentUser = null;
     Store.remove('currentUser');
     Store.remove('token');
@@ -125,12 +218,27 @@ var Data = {
     return null;
   },
 
+  generateSisterId: function() {
+    var sisters = Store.get('sisters', []);
+    var year = new Date().getFullYear();
+    var maxNum = 0;
+    for (var i = 0; i < sisters.length; i++) {
+      var match = sisters[i].id && sisters[i].id.match(/^FST-\d{4}-(\d+)$/);
+      if (match) {
+        var num = parseInt(match[1], 10);
+        if (num > maxNum) maxNum = num;
+      }
+    }
+    return 'FST-' + year + '-' + String(maxNum + 1).padStart(3, '0');
+  },
+
   addSister: function(data) {
     var sisters = Store.get('sisters', []);
-    data.id = data.id || 'FST-' + new Date().getFullYear() + '-' + String(sisters.length + 1).padStart(3,'0');
+    data.id = data.id || Data.generateSisterId();
     data.createdAt = new Date().toISOString();
     sisters.push(data);
     Store.set('sisters', sisters);
+    apiPush('POST', '/api/sisters', { record: data });
     return data;
   },
 
@@ -141,6 +249,7 @@ var Data = {
         for (var k in data) { if (data.hasOwnProperty(k)) sisters[i][k] = data[k]; }
         sisters[i].updatedAt = new Date().toISOString();
         Store.set('sisters', sisters);
+        apiPush('PUT', '/api/sisters/' + encodeURIComponent(id), data);
         return sisters[i];
       }
     }
@@ -152,6 +261,8 @@ var Data = {
     Store.set('sisters', sisters);
     var docs = Store.get('documents', []).filter(function(d) { return d.sisterId !== id; });
     Store.set('documents', docs);
+    apiPush('DELETE', '/api/sisters/' + encodeURIComponent(id));
+    if (Data.afterDocChange) Data.afterDocChange();
   },
 
   getDocuments: function(sisterId, category) {
@@ -159,6 +270,70 @@ var Data = {
     if (sisterId) docs = docs.filter(function(d) { return d.sisterId === sisterId; });
     if (category) docs = docs.filter(function(d) { return d.category === category; });
     return docs;
+  },
+
+  addDocument: function(data) {
+    var docs = Store.get('documents', []);
+    data.id = data.id || 'doc_' + new Date().getTime();
+    data.uploadedAt = data.uploadedAt || new Date().toISOString();
+    docs.push(data);
+    Store.set('documents', docs);
+    apiPush('POST', '/api/documents', data);
+    if (Data.afterDocChange) Data.afterDocChange();
+    return data;
+  },
+
+  updateDocument: function(id, data) {
+    var docs = Store.get('documents', []);
+    for (var i = 0; i < docs.length; i++) {
+      if (docs[i].id === id) {
+        for (var k in data) { if (data.hasOwnProperty(k)) docs[i][k] = data[k]; }
+        docs[i].updatedAt = new Date().toISOString();
+        Store.set('documents', docs);
+        apiPush('PUT', '/api/documents/' + encodeURIComponent(id), data);
+        if (Data.afterDocChange) Data.afterDocChange();
+        return docs[i];
+      }
+    }
+    return null;
+  },
+
+  deleteDocument: function(id) {
+    var docs = Store.get('documents', []);
+    Store.set('documents', docs.filter(function(d){ return d.id !== id; }));
+    apiPush('DELETE', '/api/documents/' + encodeURIComponent(id));
+    if (Data.afterDocChange) Data.afterDocChange();
+  },
+
+  getCustomReminders: function() {
+    return Store.get('customReminders', []).slice().sort(function(a,b){
+      return new Date(a.date) - new Date(b.date);
+    });
+  },
+
+  saveCustomReminder: function(reminder) {
+    var list = Store.get('customReminders', []);
+    if (reminder.id) {
+      for (var i = 0; i < list.length; i++) {
+        if (list[i].id === reminder.id) { list[i] = reminder; Store.set('customReminders', list); return reminder; }
+      }
+    }
+    reminder.id = reminder.id || 'rm_' + new Date().getTime();
+    reminder.createdAt = reminder.createdAt || new Date().toISOString();
+    list.push(reminder);
+    Store.set('customReminders', list);
+    return reminder;
+  },
+
+  deleteCustomReminder: function(id) {
+    var list = Store.get('customReminders', []);
+    Store.set('customReminders', list.filter(function(r){ return r.id !== id; }));
+  },
+
+  getRecentDocuments: function(count) {
+    var docs = Store.get('documents', []);
+    docs.sort(function(a,b){return (b.uploadedAt||'').localeCompare(a.uploadedAt||'');});
+    return docs.slice(0, count||3);
   },
 
   getUsers: function() {
