@@ -1888,7 +1888,7 @@ function sisPickerRenderList(key) {
     for (var j = 0; j < matched.length; j++) {
       var m = matched[j];
       var chosen = currentId === m.id ? ' sis-picker-selected' : '';
-      html += '<div class="sis-picker-item' + chosen + '" onmousedown="event.preventDefault(); sisPickerSelect(\'' + String(m.id).replace(/'/g, '') + '\')">' +
+      html += '<div class="sis-picker-item' + chosen + '" onmousedown="event.preventDefault(); sisPickerSelect(\'' + key + '\',\'' + String(m.id).replace(/'/g, '') + '\')">' +
         '<span class="sis-picker-name">' + attrEscape(Utils.sisterName(m)) + '</span>' +
         '<span class="sis-picker-id">' + attrEscape(m.id) + '</span></div>';
     }
