@@ -23,6 +23,7 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/sisters', require('./routes/sisters'));
 app.use('/api/documents', require('./routes/documents'));
 app.use('/api/users', require('./routes/users'));
+app.use('/api/storage', require('./routes/storage'));
 
 // Health check
 app.get('/api/health', function(req, res) {

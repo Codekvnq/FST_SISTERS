@@ -3132,6 +3132,44 @@ function gdriveSyncAll(silent, forceToast) {
     .catch(function() { finish({ success: false, error: 'Could not reach the sync script (network/CORS). Confirm the URL ends in /exec and the web app is deployed with access \u201cAnyone\u201d.' }, silent); });
 }
 
+function persistStorageConfigToServer(key) {
+  try {
+    var prefs = JSON.parse(localStorage.getItem(Store.prefix + 'storagePrefs') || '{}');
+    var cur = prefs[key];
+    if (!cur) return;
+    var token = localStorage.getItem('fst_token') || (Store.get('token') || '');
+    if (!token) return;
+    var payload = { link: cur.link || '', on: cur.on === true, lastSync: cur.lastSync || null, lastError: cur.lastError || null };
+    fetch('/api/storage/' + key, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify(payload)
+    }).catch(function() {});
+  } catch(e) {}
+}
+
+function restoreStorageConfigFromServer() {
+  var token = localStorage.getItem('fst_token') || (Store.get('token') || '');
+  if (!token) return;
+  fetch('/api/storage/gdrive', { headers: { 'Authorization': 'Bearer ' + token } })
+    .then(function(res) { return res.json().then(function(d) { return { status: res.status, data: d }; }); })
+    .then(function(result) {
+      if (result.status === 200 && result.data && result.data.success && result.data.data) {
+        var srv = result.data.data;
+        var prefs = {};
+        try { prefs = JSON.parse(localStorage.getItem(Store.prefix + 'storagePrefs') || '{}'); } catch(e) {}
+        if (!prefs.gdrive || !prefs.gdrive.link || !prefs.gdrive.on) {
+          prefs.gdrive = { on: true, link: srv.link || GDRIVE_DEFAULT_URL };
+          if (srv.lastSync) prefs.gdrive.lastSync = srv.lastSync;
+          if (srv.lastError) prefs.gdrive.lastError = srv.lastError;
+          localStorage.setItem(Store.prefix + 'storagePrefs', JSON.stringify(prefs));
+          refreshCurrentView();
+        }
+      }
+    })
+    .catch(function() {});
+}
+
 function connectStorage(key) {
   var prefs = {};
   try { prefs = JSON.parse(localStorage.getItem(Store.prefix + 'storagePrefs') || '{}'); } catch(e) {}
@@ -3144,6 +3182,9 @@ function connectStorage(key) {
     logActivity('system', 'disconnected storage', 'storage', key);
     showToast('Disconnected from ' + label + '.');
     refreshCurrentView();
+    if (key === 'gdrive') {
+      fetch('/api/storage/gdrive', { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + (localStorage.getItem('fst_token') || '') } }).catch(function() {});
+    }
     return;
   }
   var link = (cur.link || cur.path || '').trim();
@@ -3161,7 +3202,7 @@ function connectStorage(key) {
   logActivity('system', 'connected storage', 'storage', key);
   showToast('Connected to ' + label + '.');
   refreshCurrentView();
-  if (key === 'gdrive') setTimeout(function() { gdriveFailNotified = false; gdriveSyncAll(false, true); }, 400);
+  if (key === 'gdrive') { persistStorageConfigToServer('gdrive'); setTimeout(function() { gdriveFailNotified = false; gdriveSyncAll(false, true); }, 400); }
 }
 
 function saveStorageConfig(key) {
@@ -3193,7 +3234,7 @@ function saveStorageConfig(key) {
   logActivity('system', 'connected storage', 'storage', key);
   showToast('Connected to ' + (storageLabelMap[key] || 'storage') + '.');
   refreshCurrentView();
-  if (key === 'gdrive') setTimeout(function() { gdriveFailNotified = false; gdriveSyncAll(false, true); }, 400);
+  if (key === 'gdrive') { persistStorageConfigToServer('gdrive'); setTimeout(function() { gdriveFailNotified = false; gdriveSyncAll(false, true); }, 400); }
 }
 
 function getSysCatList() {
@@ -5606,6 +5647,7 @@ document.addEventListener('DOMContentLoaded', function() {
   updateNotifyBadge();
   syncLocalUsers();
   Data.afterDocChange = function() { gdriveSyncAll(true); };
+  restoreStorageConfigFromServer();
   if (gdriveConfig()) {
     try {
       if (sessionStorage.getItem('fst_gdsynced') !== '1') {
