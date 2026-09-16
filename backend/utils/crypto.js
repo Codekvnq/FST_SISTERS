@@ -28,6 +28,7 @@ var decrypt = function(stored) {
     decipher.setAuthTag(Buffer.from(parts[1], 'base64'));
     return decipher.update(Buffer.from(parts[2], 'base64'), 'utf8', 'utf8') + decipher.final('utf8');
   } catch (e) {
+    console.error('crypto.decrypt failed (possible tampered value or key mismatch):', e.message);
     return '';
   }
 };

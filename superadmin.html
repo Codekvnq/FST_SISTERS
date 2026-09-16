@@ -113,8 +113,11 @@
 function renderSidebar() {
   var user = Auth.currentUser;
   var dispName = (user.username || user.email || '').split('@')[0] || user.email || 'User';
+  var av = user.avatar
+    ? '<div class="sidebar-avatar" style="background-image:url(\'' + user.avatar + '\');background-size:cover;background-position:center;color:transparent"></div>'
+    : '<div class="sidebar-avatar">' + Utils.getInitials(dispName,'') + '</div>';
   document.getElementById('sidebarFooter').innerHTML =
-    '<div class="sidebar-user"><div class="sidebar-avatar">' + Utils.getInitials(dispName,'') + '</div><div class="sidebar-user-info"><div class="sidebar-user-name">' + (user.username || user.email) + '</div><div class="sidebar-user-role">' + user.role + '</div></div></div>';
+    '<div class="sidebar-user">' + av + '<div class="sidebar-user-info"><div class="sidebar-user-name">' + (user.username || user.email) + '</div><div class="sidebar-user-role">' + user.role + '</div></div></div>';
 }
 
 function renderStats() {
@@ -140,8 +143,12 @@ function renderUsers() {
   for (var i = 0; i < users.length; i++) {
     var u = users[i];
     var roleBadge = u.role === 'superadmin' ? 'badge-active' : u.role === 'admin' ? 'badge-retired' : u.role === 'moderator' ? 'badge-warning' : 'badge-inactive';
+    var dispU = u.displayName || u.username || u.email;
+    var uAvatar = u.avatar
+      ? '<div class="user-avatar" style="background-image:url(\'' + u.avatar + '\');background-size:cover;background-position:center;color:transparent">' + Utils.getInitials(String(dispU).split('@')[0] || dispU, '') + '</div>'
+      : '<div class="user-avatar">' + Utils.getInitials(String(dispU).split('@')[0] || dispU, '') + '</div>';
     html += '<tr>' +
-      '<td><span class="font-medium">' + esc(u.displayName || u.username || u.email) + '</span>' + ((u.username && u.username !== u.email) ? '<div style="font-size:0.62rem;color:#646970">' + esc(u.username) + '</div>' : '') + '</td>' +
+      '<td><div class="user-cell">' + uAvatar + '<div><span class="font-medium">' + esc(u.displayName || u.username || u.email) + '</span>' + ((u.username && u.username !== u.email) ? '<div style="font-size:0.62rem;color:#646970">' + esc(u.username) + '</div>' : '') + '</div></div></td>' +
       '<td><span class="badge ' + roleBadge + '">' + Utils.capitalize(u.role) + '</span></td>' +
       '<td class="text-muted">' + (u.sisterId || '-') + '</td>' +
       '<td class="text-muted">' + (u.phone ? esc(u.phone) : '-') + (u.email ? '<div style="font-size:0.62rem;color:#646970">' + esc(u.email) + '</div>' : '') + '</td>' +
@@ -234,6 +241,20 @@ document.addEventListener('DOMContentLoaded', function() {
   renderSidebar();
   renderStats();
   renderUsers();
+  var token = localStorage.getItem('fst_token') || (Store.get('token') || '');
+  if (token) {
+    fetch('/api/users', { headers: { 'Authorization': 'Bearer ' + token } })
+      .then(function(res) { return res.json(); })
+      .then(function(d) {
+        if (d && d.success && Array.isArray(d.data)) {
+          Store.set('users', d.data);
+          renderSidebar();
+          renderStats();
+          renderUsers();
+        }
+      })
+      .catch(function() {});
+  }
 });
 </script>
 </body>

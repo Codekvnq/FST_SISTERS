@@ -71,9 +71,6 @@
                 Secure Login
               </button>
             </form>
-            <div class="login-demo" id="loginDemoHint">
-              Check <code>.env.example</code> for default credentials.
-            </div>
           </div>
         </div>
 
@@ -171,22 +168,6 @@ function completeLogin(user) {
   setTimeout(function() { window.location.href = 'dashboard.html'; }, 1300);
 }
 
-function loadDemoDefaults() {
-  var hint = document.getElementById('loginDemoHint');
-  fetch('/api/auth/defaults')
-    .then(function(res) { return res.json().then(function(d) { return { status: res.status, data: d }; }); })
-    .then(function(result) {
-      if (result.status === 200 && result.data && result.data.success && Array.isArray(result.data.data) && result.data.data.length) {
-        var html = 'Demo accounts: ';
-        var chips = result.data.data.map(function(c) {
-          return '<code>' + c.username + '</code> / <code>' + c.password + '</code>';
-        });
-        hint.innerHTML = 'Demo accounts: ' + chips.join('<br>');
-      }
-    })
-    .catch(function() {});
-}
-
 function handleLogin(e) {
   e.preventDefault();
   var username = document.getElementById('emailInput').value.trim();
@@ -217,7 +198,6 @@ document.addEventListener('DOMContentLoaded', function() {
   if (params.get('loggedout')) {
     setTimeout(function() { showToast('You have been logged out.', 'info'); }, 400);
   }
-  loadDemoDefaults();
   var savedUser = Auth.init();
   if (savedUser && (savedUser.role === 'superadmin' || savedUser.role === 'admin' || savedUser.role === 'moderator')) {
     window.location.href = 'dashboard.html';

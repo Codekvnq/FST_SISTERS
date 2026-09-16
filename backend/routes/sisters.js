@@ -265,7 +265,13 @@ router.delete('/:id', protect, authorize('admin', 'superadmin'), async function(
     var Document = require('../models/Document');
     await Document.softDelete({ sisterId: req.params.id }, { userId: req.user ? req.user.id : null });
     var User = require('../models/User');
-    await User.softDelete({ sisterId: req.params.id }, { userId: req.user ? req.user.id : null });
+    var linkedUsers = await User.find({ sisterId: req.params.id }).exec();
+    for (var uix = 0; uix < linkedUsers.length; uix++) {
+      await User.findOneAndUpdate(
+        { id: linkedUsers[uix].id },
+        { $set: { sisterId: null, updatedAt: new Date().toISOString() } }
+      );
+    }
     await logActivity('sister.delete', 'sister', req.params.id, UtilsName(sister), 'Soft-deleted sister and related records', req.user);
     res.json({ success: true, data: {} });
   } catch (err) {

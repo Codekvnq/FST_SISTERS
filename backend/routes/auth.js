@@ -59,24 +59,6 @@ router.get('/me', protect, async function(req, res) {
   }
 });
 
-router.get('/defaults', async function(req, res) {
-  try {
-    if (String(process.env.NODE_ENV || '').trim() === 'production') {
-      return res.status(404).json({ success: false, error: 'Not available in production mode' });
-    }
-    var creds = String(process.env.DEMO_CREDENTIALS || 'superadmin/admin123, admin/admin456, moderator/mod123')
-      .split(',')
-      .map(function(entry) {
-        var parts = entry.split('/').map(function(p) { return p.trim(); });
-        return { username: parts[0], password: parts[1] || '' };
-      })
-      .filter(function(c) { return c.username; });
-    res.json({ success: true, data: creds });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
 router.post('/change-password', protect, async function(req, res) {
   try {
     var { currentPassword, newPassword } = req.body;

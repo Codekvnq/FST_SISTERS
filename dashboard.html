@@ -1052,10 +1052,6 @@ function renderSettingsViewSystem() {
   var storagePct = Math.min(100, Math.round((storageBytes / (5 * 1024 * 1024)) * 100));
 
   var notifPrefs = (function(){ try { return JSON.parse(localStorage.getItem(Store.prefix + 'notifPrefs') || 'null'); } catch(e){ return null; } })() || {};
-  var notifToggle = function(key, label, desc) {
-    var on = notifPrefs[key] !== false;
-    return '<div class="notif-row"><div class="notif-info"><div class="notif-name">' + label + '</div>' + (desc ? '<div class="notif-desc">' + desc + '</div>' : '') + '</div><label class="switch"><input type="checkbox" ' + (on ? 'checked' : '') + ' onchange="setNotifPref(\'' + key + '\', this.checked)"><span class="switch-slider"></span></label></div>';
-  };
   var cu = Auth.currentUser;
   var currentUserEmail = (cu && (cu.username || cu.email)) || '—';
 
@@ -1098,9 +1094,7 @@ function renderSettingsViewSystem() {
     '<div class="card"><div class="card-title"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>Notification Preferences</div>' +
     '<p class="text-muted text-sm mb-4">Choose which alerts are surfaced in the app.</p>' +
     '<div class="notif-list">' +
-    notifToggle('reminders', 'Reminder alerts', 'Upcoming milestones and custom reminders you set') +
-    notifToggle('admin', 'Admin alerts', 'System and backup notifications') +
-    notifToggle('gaps', 'Profile gap alerts', 'Missing certificates and contact details') +
+    roleNotifToggleRows(notifPrefs) +
     '</div></div>' +
     '<div class="card"><div class="card-title"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Access &amp; Roles</div>' +
     '<p class="text-muted text-sm mb-4">Accounts are limited to the roles eligible to access the system.</p>' +
@@ -1167,16 +1161,10 @@ function cancelPasswordEdit() {
 
 function settingsNotifCard() {
   var notifPrefs = (function(){ try { return JSON.parse(localStorage.getItem(Store.prefix + 'notifPrefs') || 'null'); } catch(e){ return null; } })() || {};
-  var notifToggle = function(key, label, desc) {
-    var on = notifPrefs[key] !== false;
-    return '<div class="notif-row"><div class="notif-info"><div class="notif-name">' + label + '</div>' + (desc ? '<div class="notif-desc">' + desc + '</div>' : '') + '</div><label class="switch"><input type="checkbox" ' + (on ? 'checked' : '') + ' onchange="setNotifPref(\'' + key + '\', this.checked)"><span class="switch-slider"></span></label></div>';
-  };
   return '<div class="card"><div class="card-title"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>Notification Preferences</div>' +
     '<p class="text-muted text-sm mb-4">Choose which alerts are surfaced in the app.</p>' +
     '<div class="notif-list">' +
-    notifToggle('reminders', 'Reminder alerts', 'Upcoming milestones and custom reminders you set') +
-    notifToggle('admin', 'Admin alerts', 'System and backup notifications') +
-    notifToggle('gaps', 'Profile gap alerts', 'Missing certificates and contact details') +
+    roleNotifToggleRows(notifPrefs) +
     '</div></div>';
 }
 
@@ -1593,6 +1581,19 @@ function setNotifPref(key, on) {
   var prefs = (function(){ try { return JSON.parse(localStorage.getItem(Store.prefix + 'notifPrefs') || 'null'); } catch(e){ return null; } })() || {};
   if (on) delete prefs[key]; else prefs[key] = false;
   try { localStorage.setItem(Store.prefix + 'notifPrefs', JSON.stringify(prefs)); } catch (e) {}
+}
+
+function roleNotifToggleRows(notifPrefs) {
+  var notifToggle = function(key, label, desc) {
+    var on = notifPrefs[key] !== false;
+    return '<div class="notif-row"><div class="notif-info"><div class="notif-name">' + label + '</div>' + (desc ? '<div class="notif-desc">' + desc + '</div>' : '') + '</div><label class="switch"><input type="checkbox" ' + (on ? 'checked' : '') + ' onchange="setNotifPref(\'' + key + '\', this.checked)"><span class="switch-slider"></span></label></div>';
+  };
+  var role = Auth.currentUser ? Auth.currentUser.role : '';
+  var html = '';
+  html += notifToggle('reminders', 'Reminder alerts', 'Upcoming milestones and custom reminders you set');
+  if (role === 'superadmin') html += notifToggle('admin', 'Admin alerts', 'System and backup notifications');
+  if (role === 'superadmin' || role === 'admin') html += notifToggle('gaps', 'Profile gap alerts', 'Missing certificates and contact details');
+  return html;
 }
 
 function passwordRuleProblems(value) {
@@ -2722,10 +2723,13 @@ function renderAdminUsers() {
       var sis = f.sisterId ? Data.getSisterById(f.sisterId) : null;
       var dispName2 = accountDisplayName(f);
       var subName = (f.username && f.username !== f.email) ? f.username : (f.email && f.email !== f.username ? f.email : '');
+      var avatarCell2 = f.avatar
+        ? '<div class="user-avatar" style="background-image:url(\'' + f.avatar + '\');background-size:cover;background-position:center;color:transparent">' + Utils.getInitials(dispName2.split('@')[0], '') + '</div>'
+        : '<div class="user-avatar">' + Utils.getInitials(dispName2.split('@')[0], '') + '</div>';
       var contactVal = '\u2014';
         if (f.phone) contactVal = attrEscape(f.phone);
         else if (sis && sis.contact) contactVal = attrEscape(sis.contact.phone || sis.contact.mobile || sis.contact.emergencyContact || sis.contact.emergency || '\u2014');
-        html += '<tr><td><div class="user-cell"><div class="user-avatar">' + Utils.getInitials(dispName2.split('@')[0], '') + '</div><div class="user-cell-info"><span class="user-cell-name">' + attrEscape(dispName2) + '</span>' + (subName ? '<span class="user-cell-email">' + attrEscape(subName) + '</span>' : '') + '</div></div></td>' +
+        html += '<tr><td><div class="user-cell">' + avatarCell2 + '<div class="user-cell-info"><span class="user-cell-name">' + attrEscape(dispName2) + '</span>' + (subName ? '<span class="user-cell-email">' + attrEscape(subName) + '</span>' : '') + '</div></div></td>' +
         '<td><span class="badge ' + adminRoleBadge(f.role) + '">' + adminRoleLabel(f.role) + '</span></td>' +
         '<td class="text-muted">' + (sis ? Utils.sisterName(sis) + ' (' + sis.id + ')' : '-') + '</td>' +
         '<td><span class="user-cell-email">' + contactVal + '</span></td>' +
@@ -3451,35 +3455,53 @@ function saveUserForm() {
 
 function syncLocalUsers() {
   var token = localStorage.getItem('fst_token') || (Store.get('token') || '');
-  fetch('/api/users', { headers: { 'Authorization': 'Bearer ' + token } })
+  var meRole = Auth.currentUser ? Auth.currentUser.role : '';
+  var url = meRole === 'superadmin' ? '/api/users' : '/api/auth/me';
+  fetch(url, { headers: { 'Authorization': 'Bearer ' + token } })
     .then(function(res) { return res.json().then(function(d) { return { status: res.status, data: d }; }); })
     .then(function(result) {
-      if (result.status === 200 && result.data && result.data.success && Array.isArray(result.data.data)) {
-        var serverUsers = result.data.data;
-        var localUsers = Store.get('users', []);
-        var byKey = {};
-        for (var i = 0; i < serverUsers.length; i++) byKey[serverUsers[i].id || serverUsers[i].email] = serverUsers[i];
-        for (var j = 0; j < localUsers.length; j++) {
-          var lu = localUsers[j];
-          var key = lu.id || lu.email;
-          var su = byKey[key];
-          if (su) {
-            if (!su.displayName && lu.displayName) su.displayName = lu.displayName;
-            if (!su.phone && lu.phone) su.phone = lu.phone;
-            if (!su.avatar && lu.avatar) su.avatar = lu.avatar;
-            if (!su.sisterId && lu.sisterId) su.sisterId = lu.sisterId;
+      if (result.status === 200 && result.data && result.data.success) {
+        var serverUsers = Array.isArray(result.data.data)
+          ? result.data.data
+          : ((result.data.data && result.data.data.id) ? [result.data.data] : []);
+        if (Array.isArray(serverUsers) && serverUsers.length) {
+          var localUsers = Store.get('users', []);
+          var byKey = {};
+          for (var i = 0; i < serverUsers.length; i++) if (serverUsers[i]) byKey[serverUsers[i].id || serverUsers[i].email] = serverUsers[i];
+          if (meRole === 'superadmin') {
+            for (var j = 0; j < localUsers.length; j++) {
+              var lu = localUsers[j];
+              var key = lu.id || lu.email;
+              var su = byKey[key];
+              if (su && !su.deletedAt) {
+                if (!su.displayName && lu.displayName) su.displayName = lu.displayName;
+                if (!su.phone && lu.phone) su.phone = lu.phone;
+                if (!su.avatar && lu.avatar) su.avatar = lu.avatar;
+                if (!su.sisterId && lu.sisterId) su.sisterId = lu.sisterId;
+              }
+            }
+            Store.set('users', serverUsers);
+          } else {
+            var fresh = serverUsers[0];
+            for (var m = 0; m < localUsers.length; m++) {
+              if (localUsers[m].id === fresh.id || localUsers[m].email === fresh.email || localUsers[m].username === fresh.username) {
+                for (var uk in fresh) localUsers[m][uk] = fresh[uk];
+                break;
+              }
+            }
+            Store.set('users', localUsers);
           }
-        }
-        Store.set('users', serverUsers);
-        var cu = Auth.currentUser;
-        if (cu) {
-          var fresh = byKey[cu.id || cu.email];
-          if (fresh) {
-            Auth.currentUser = fresh;
-            try { localStorage.setItem('fst_current_user', JSON.stringify(fresh)); } catch (e) {}
-            renderUserGreeting && renderUserGreeting();
-            renderSidebar && renderSidebar();
+          var cu = Auth.currentUser;
+          if (cu) {
+            var ck = byKey[cu.id || cu.email] || byKey[cu.username];
+            if (ck) {
+              Auth.currentUser = ck;
+              try { localStorage.setItem('fst_current_user', JSON.stringify(ck)); } catch (e) {}
+              renderUserGreeting && renderUserGreeting();
+              renderSidebar && renderSidebar();
+            }
           }
+          if (typeof refreshDataViews === 'function') refreshDataViews();
         }
       }
     })
@@ -3907,6 +3929,14 @@ function saveReadNotifs() {
   Store.set('readNotifs', readNotifs);
 }
 
+function roleSeesNotifType(type) {
+  var role = Auth.currentUser ? Auth.currentUser.role : '';
+  if (type === 'activity' || type === 'alert') return role === 'superadmin' || role === 'admin';
+  if (type === 'announcement') return role !== 'superadmin';
+  if (type === 'admin') return role === 'superadmin';
+  return true;
+}
+
 function getAllNotifications() {
   var sisters = Data.getSisters();
   var docs = Data.getDocuments();
@@ -3916,7 +3946,9 @@ function getAllNotifications() {
   var np = (function(){ try { return JSON.parse(localStorage.getItem(Store.prefix + 'notifPrefs') || 'null'); } catch(e){ return null; } })() || {};
   var remindersOn = np.reminders !== false;
   var gapsOn = np.gaps !== false;
+  var adminOn = np.admin !== false;
   function addItem(key, strong, span, timeText, ts, type) {
+    if (!roleSeesNotifType(type || '')) return;
     items.push({ key: key, strong: strong, span: span, time: timeText, ts: ts || Date.now(), type: type || '' });
   }
   for (var i = 0; i < sisters.length; i++) {
@@ -3978,6 +4010,23 @@ function getAllNotifications() {
     else actionText = ev.action || 'activity';
     var who = displayUserName(ev);
     addItem(ev.id, Utils.capitalize(actionText) + ': ' + (ev.entityName || ev.entityId || ''), who, Utils.formatDateRelative(ev.timestamp), Date.parse(ev.timestamp) || Date.now(), 'activity');
+  }
+  if (isSup && adminOn) {
+    var sysCount = 0;
+    for (var sj = log.length - 1; sj >= 0 && sysCount < 5; sj--) {
+      var se = log[sj];
+      var st = se.type || '';
+      if (st.indexOf('auth.') !== 0 && st.indexOf('system.') !== 0 && st.indexOf('user.') !== 0) continue;
+      if (st === 'auth.logout' || st === 'system.setup') continue;
+      sysCount++;
+      var seText = '';
+      if (st === 'auth.login') seText = 'User sign-in';
+      else if (st === 'user.create') seText = 'New user account created';
+      else if (st === 'user.update') seText = 'User account updated';
+      else if (st === 'user.delete') seText = 'User account removed';
+      else seText = se.action || 'System event';
+      addItem('sys-' + se.id, 'Admin alert: ' + seText, displayUserName(se) + (se.entityName ? ' \u00b7 ' + se.entityName : ''), Utils.formatDateRelative(se.timestamp), Date.parse(se.timestamp) || Date.now(), 'admin');
+    }
   }
   items.sort(function(a, b) { return b.ts - a.ts; });
   return items;
@@ -4981,6 +5030,9 @@ function renderActivityView() {
       var suEmail = su.username || su.email || '';
       var suPrefix = suEmail.split('@')[0] || '?';
       var suInitial = (suEmail.charAt(0) || '?').toUpperCase();
+      var suAvatarHtml = su.avatar
+        ? '<div class="user-sess-avatar" style="background-image:url(\'' + su.avatar + '\');background-size:cover;background-position:center;color:transparent">' + suInitial + '</div>'
+        : '<div class="user-sess-avatar">' + suInitial + '</div>';
       var suLogins = 0;
       for (var sli = 0; sli < log.length; sli++) {
         var le = log[sli];
@@ -4991,7 +5043,7 @@ function renderActivityView() {
       var suLogout = su.lastLogout ? Utils.formatDateRelative(su.lastLogout) : '';
       sessShown++;
       html += '<div style="display:flex;align-items:center;gap:6px;padding:5px 6px;border:1px solid #f0f0f1;border-radius:4px;background:#fafbfc">';
-      html += '<div class="user-sess-avatar">' + suInitial + '</div>';
+      html += suAvatarHtml;
       html += '<div style="flex:1;min-width:0">';
       html += '<div style="font-weight:600;font-size:0.66rem;color:#1d2327;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + suEmail + (su.email === sessCurrent || su.username === sessCurrent ? ' <span class="badge badge-active" style="font-size:0.5rem">You</span>' : '') + '</div>';
       html += '<div style="font-size:0.6rem;color:#646970">Login: ' + suLast + (suLogout ? ' &middot; Logout: ' + suLogout : '') + ' &middot; ' + suLogins + ' session' + (suLogins === 1 ? '' : 's') + '</div>';

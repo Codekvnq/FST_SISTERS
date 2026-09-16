@@ -261,6 +261,12 @@ var Data = {
     Store.set('sisters', sisters);
     var docs = Store.get('documents', []).filter(function(d) { return d.sisterId !== id; });
     Store.set('documents', docs);
+    var users = Store.get('users', []);
+    var changed = false;
+    for (var ui = 0; ui < users.length; ui++) {
+      if (users[ui].sisterId === id) { users[ui].sisterId = null; changed = true; }
+    }
+    if (changed) Store.set('users', users);
     apiPush('DELETE', '/api/sisters/' + encodeURIComponent(id));
     if (Data.afterDocChange) Data.afterDocChange();
   },

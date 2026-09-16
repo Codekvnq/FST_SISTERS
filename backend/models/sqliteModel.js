@@ -160,6 +160,41 @@ function runOne(tableName, filter, projection, softDelete) {
 }
 
 function runInsert(tableName, data, softDelete) {
+  function doInsert(values) {
+    return new Promise(function(resolve, reject) {
+      var columns = Object.keys(values);
+      var placeholders = columns.map(function() { return '?'; }).join(', ');
+      var params = columns.map(function(key) { return values[key]; });
+      var sql = 'INSERT INTO ' + tableName + ' (' + columns.join(', ') + ') VALUES (' + placeholders + ')';
+      db.run(sql, params, function(err) {
+        if (err) return reject(err);
+        var record = Object.assign({}, values);
+        if (tableName === 'users' && record.password) delete record.password;
+        enqueueOutbox('create', tableName, record.id, record).then(function() {
+          resolve(values);
+        });
+      });
+    });
+  }
+  function doRestore(values, existingRow) {
+    return new Promise(function(resolve, reject) {
+      values.version = (existingRow && existingRow.version ? existingRow.version : 0) + 1;
+      values.deletedAt = null;
+      values.deletedBy = null;
+      values.updatedAt = new Date().toISOString();
+      var columns = Object.keys(values).filter(function(k) { return k !== 'id'; });
+      var assignments = columns.map(function(key) { return key + ' = ?'; }).join(', ');
+      var params = columns.map(function(key) { return values[key]; });
+      params.push(values.id);
+      var sql = 'UPDATE ' + tableName + ' SET ' + assignments + ' WHERE id = ?';
+      db.run(sql, params, function(err) {
+        if (err) return reject(err);
+        enqueueOutbox('update', tableName, values.id, Object.assign({}, values)).then(function() {
+          resolve(values);
+        });
+      });
+    });
+  }
   return new Promise(function(resolve, reject) {
     var values = {};
     Object.keys(data).forEach(function(key) {
@@ -174,18 +209,16 @@ function runInsert(tableName, data, softDelete) {
       if (values.version === undefined || values.version === null) values.version = 1;
       if (values.deletedAt === undefined || values.deletedAt === null) values.deletedAt = null;
     }
-
-    var columns = Object.keys(values);
-    var placeholders = columns.map(function() { return '?'; }).join(', ');
-    var params = columns.map(function(key) { return values[key]; });
-    var sql = 'INSERT INTO ' + tableName + ' (' + columns.join(', ') + ') VALUES (' + placeholders + ')';
-    db.run(sql, params, function(err) {
+    if (!softDelete || !values.id) {
+      return doInsert(values).then(resolve, reject);
+    }
+    db.get('SELECT deletedAt, version FROM ' + tableName + ' WHERE id = ?', [values.id], function(err, row) {
       if (err) return reject(err);
-      var record = Object.assign({}, values);
-      if (tableName === 'users' && record.password) delete record.password;
-      enqueueOutbox('create', tableName, record.id, record).then(function() {
-        resolve(values);
-      });
+      if (!row) return doInsert(values).then(resolve, reject);
+      if (row.deletedAt === null || row.deletedAt === undefined) {
+        return reject(new Error('Record with id ' + values.id + ' already exists'));
+      }
+      return doRestore(values, row).then(resolve, reject);
     });
   });
 }
