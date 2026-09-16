@@ -1996,15 +1996,15 @@ function renderMilestones() {
       var next = new Date(now.getFullYear(), bd.getMonth(), bd.getDate());
       if (next < now) next.setFullYear(next.getFullYear() + 1);
       var diff = Math.ceil((next - now) / 86400000);
-      if (diff <= 45) events.push({ icon: icons.cake, name: Utils.sisterName(s), date: next, label: Utils.formatDateShort(s.dateOfBirth) });
+      if (diff <= 45) events.push({ type: 'bday', icon: icons.cake, name: Utils.sisterName(s), date: next, label: 'Upcoming Birthday', sub: Utils.formatDate(new Date(s.dateOfBirth)) });
     }
     if (s.dates && s.dates.silverJubilee) {
       var sj = new Date(s.dates.silverJubilee);
-      if (sj > now) { var d = Math.ceil((sj - now) / 86400000); if (d <= 60) events.push({ icon: icons.ribbon, name: Utils.sisterName(s), date: sj, label: 'Silver Jubilee' }); }
+      if (sj > now) { var d = Math.ceil((sj - now) / 86400000); if (d <= 60) events.push({ type: 'jubilee', icon: icons.ribbon, name: Utils.sisterName(s), date: sj, label: 'Silver Jubilee', sub: Utils.formatDate(sj) }); }
     }
     if (s.dates && s.dates.finalProfession) {
       var fp = new Date(s.dates.finalProfession);
-      if (fp > now) { var d = Math.ceil((fp - now) / 86400000); if (d <= 60) events.push({ icon: icons.star, name: Utils.sisterName(s), date: fp, label: 'Final Profession' }); }
+      if (fp > now) { var d = Math.ceil((fp - now) / 86400000); if (d <= 60) events.push({ type: 'profession', icon: icons.star, name: Utils.sisterName(s), date: fp, label: 'Final Profession', sub: Utils.formatDate(fp) }); }
     }
   }
   var customRm = Data.getCustomReminders ? Data.getCustomReminders() : [];
@@ -2014,17 +2014,21 @@ function renderMilestones() {
     var crdDiff = Math.ceil((crd - now) / 86400000);
     if (crdDiff >= 0 && crdDiff <= 14) {
       var crWho = customRm[cr].sisterId && Data.getSisterById(customRm[cr].sisterId) ? Utils.sisterName(Data.getSisterById(customRm[cr].sisterId)) : 'General';
-      events.push({ icon: icons.clock, name: customRm[cr].title, date: crd, label: 'Reminder · ' + crWho });
+      events.push({ type: 'reminder', icon: icons.clock, name: customRm[cr].title, date: crd, label: 'Reminder \u00b7 ' + crWho, sub: Utils.formatDate(crd) });
     }
   }
   events.sort(function(a,b){return a.date - b.date;});
-  events = events.slice(0, 3);
   var html = '';
-  for (var i = 0; i < events.length; i++) {
-    var e = events[i];
+  if (events.length > 0) {
+    html += '<div class="milestone-head"><span class="milestone-head-txt"><span class="milestone-head-dot"></span>' + events.length + ' upcoming milestone' + (events.length === 1 ? '' : 's') + '</span><button type="button" class="milestone-viewall" onclick="return activateView(\'reminders\');">View all</button></div>';
+  }
+  var topEvents = events.slice(0, 3);
+  for (var j = 0; j < topEvents.length; j++) {
+    var e = topEvents[j];
     var days = Math.ceil((e.date - now) / 86400000);
     var when = days === 0 ? 'Today' : days === 1 ? 'Tomorrow' : 'in ' + days + 'd';
-    html += '<div class="milestone-item"><span class="milestone-icon">' + e.icon + '</span><div class="milestone-info"><div class="milestone-name">' + e.name + '</div><div class="milestone-date">' + e.label + ' — ' + when + '</div></div></div>';
+    var urgClass = days === 0 ? 'ms-urg ms-urg-today' : days === 1 ? 'ms-urg ms-urg-tomorrow' : 'ms-urg';
+    html += '<div class="milestone-item ms-' + e.type + '"><span class="milestone-icon">' + e.icon + '</span><div class="milestone-info"><div class="milestone-top"><span class="milestone-type">' + e.label + '</span><span class="' + urgClass + '">' + when + '</span></div><div class="milestone-name">' + e.name + '</div><div class="milestone-date">' + e.sub + '</div></div></div>';
   }
   if (!html) html = '<div class="widget-empty">No upcoming milestones yet</div>';
   var mle = document.getElementById('milestonesList');
@@ -3035,10 +3039,20 @@ function gdriveSetBusyUI(busy) {
 function gdriveSyncAll(silent) {
   var cfg = gdriveConfig();
   if (!cfg) return;
+  var url = String(cfg.link || '').trim();
+  var urlOk = !!(url && (/^https?:\/\/script\.google\.com\/macros\/s\/.+\/(exec|dev)$/.test(url) || /^https?:\/\/[^/]+\/(exec|dev)$/.test(url)));
+  if (!urlOk) {
+    gdriveBusy = false;
+    gdriveSetBusyUI(false);
+    var badSt = document.getElementById('gdriveStatus');
+    if (badSt && badSt.textContent) { badSt.textContent = 'Configured \u00b7 Not connected \u2014 enter a valid web app URL (ends in /exec).'; badSt.className = 'sc-status'; }
+    if (!silent && url) showToast('Drive sync skipped: the saved web app URL is not valid. Go to Admin \u00b7 External Storage Connector \u00b7 Google Drive and paste a deployed /exec URL.', null, null, 'warning');
+    return;
+  }
   if (gdriveBusy) { gdriveWantSync = true; return; }
   gdriveBusy = true;
   gdriveSetBusyUI(true);
-  var url = String(cfg.link).trim().replace(/\/+$/, '');
+  url = url.replace(/\/+$/, '');
   var payload = JSON.stringify({ action: 'sync', docs: Store.get('documents', []), sisters: Store.get('sisters', []), syncedAt: new Date().toISOString() });
   var done = false, timedOut = false, timer = null;
   var finish = function(res, sil) {
